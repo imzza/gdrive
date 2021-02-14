@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/prasmussen/gdrive/cli"
+	"github.com/imzza/gdrive/cli"
 )
 
 const Name = "gdrive"
-const Version = "2.1.0"
+const Version = "1.0.0"
 
 const DefaultMaxFiles = 30
 const DefaultMaxChanges = 100
