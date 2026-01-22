@@ -1,0 +1,6 @@
+{
+    "yaml.schemas": {
+        "https://www.schemastore.org/dependabot-2.0.json": "file:///d%3A/webserver/gdrive/.github/workflows/dependbot.yml",
+        "https://www.schemastore.org/github-release-config.json": "file:///d%3A/webserver/gdrive/.github/workflows/zizmor.yml"
+    }
+}

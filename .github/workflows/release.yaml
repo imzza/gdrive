@@ -7,9 +7,12 @@ jobs:
     name: release linux/386
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+    - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+      with:
+        go-version: '1.25.x'
     - name: compile and release
-      uses: ngs/go-release.action@v1.0.1
+      uses: ngs/go-release.action@a32a23d081d503245410d9d7bf59b722b50cc766 # v1.0.2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GOARCH: "386"
@@ -19,9 +22,12 @@ jobs:
     name: release linux/amd64
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+    - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+      with:
+        go-version: '1.25.x'
     - name: compile and release
-      uses: ngs/go-release.action@v1.0.1
+      uses: ngs/go-release.action@a32a23d081d503245410d9d7bf59b722b50cc766 # v1.0.2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GOARCH: amd64
@@ -31,9 +37,12 @@ jobs:
     name: release linux/386
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+    - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+      with:
+        go-version: '1.25.x'
     - name: compile and release
-      uses: ngs/go-release.action@v1.0.1
+      uses: ngs/go-release.action@a32a23d081d503245410d9d7bf59b722b50cc766 # v1.0.2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GOARCH: "arm"
@@ -43,9 +52,12 @@ jobs:
     name: release linux/amd64
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+    - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+      with:
+        go-version: '1.25.x'
     - name: compile and release
-      uses: ngs/go-release.action@v1.0.1
+      uses: ngs/go-release.action@a32a23d081d503245410d9d7bf59b722b50cc766 # v1.0.2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GOARCH: arm64
@@ -55,9 +67,12 @@ jobs:
     name: release darwin/amd64
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+    - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+      with:
+        go-version: '1.25.x'
     - name: compile and release
-      uses: ngs/go-release.action@v1.0.1
+      uses: ngs/go-release.action@a32a23d081d503245410d9d7bf59b722b50cc766 # v1.0.2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GOARCH: amd64
@@ -67,9 +82,12 @@ jobs:
     name: release windows/386
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+    - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+      with:
+        go-version: '1.25.x'
     - name: compile and release
-      uses: ngs/go-release.action@v1.0.1
+      uses: ngs/go-release.action@a32a23d081d503245410d9d7bf59b722b50cc766 # v1.0.2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GOARCH: "386"
@@ -79,9 +97,12 @@ jobs:
     name: release windows/amd64
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+    - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
+      with:
+        go-version: '1.25.x'
     - name: compile and release
-      uses: ngs/go-release.action@v1.0.1
+      uses: ngs/go-release.action@a32a23d081d503245410d9d7bf59b722b50cc766 # v1.0.2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GOARCH: amd64
