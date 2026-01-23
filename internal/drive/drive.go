@@ -6,7 +6,7 @@ import (
 )
 
 type Drive struct {
-	service *drive.Service
+	Service *drive.Service
 }
 
 func New(client *http.Client) (*Drive, error) {
@@ -15,5 +15,5 @@ func New(client *http.Client) (*Drive, error) {
 		return nil, err
 	}
 
-	return &Drive{service}, nil
+	return &Drive{Service: service}, nil
 }

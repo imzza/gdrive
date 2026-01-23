@@ -16,7 +16,7 @@ import (
 
 	"github.com/imzza/gdrive/internal/auth"
 	"github.com/imzza/gdrive/internal/cli"
-	"github.com/imzza/gdrive/internal/drive"
+	drivepkg "github.com/imzza/gdrive/internal/drive"
 	"github.com/imzza/gdrive/internal/utils"
 )
 
@@ -228,7 +228,7 @@ func addAccountWithName(baseDir, name string, secret utils.AccountSecret, args c
 	}
 
 	client := accountAuthClient(args, accountPath, secret)
-	drv, err := drive.New(client)
+	drv, err := drivepkg.New(client)
 	if err != nil {
 		utils.ExitF("Failed to create drive client: %s", err)
 	}
@@ -264,7 +264,7 @@ func addAccountWithEmail(baseDir string, secret utils.AccountSecret, args cli.Ar
 	defer os.RemoveAll(tmpDir)
 
 	client := accountAuthClient(args, tmpDir, secret)
-	drv, err := drive.New(client)
+	drv, err := drivepkg.New(client)
 	if err != nil {
 		utils.ExitF("Failed to create drive client: %s", err)
 	}

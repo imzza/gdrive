@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/imzza/gdrive/internal/drive"
+	"github.com/imzza/gdrive/internal/drive/sync"
 	"github.com/imzza/gdrive/internal/utils"
 )
 
@@ -12,7 +12,7 @@ const MinCacheFileSize = 5 * 1024 * 1024
 
 type Md5Comparer struct{}
 
-func (self Md5Comparer) Changed(local *drive.LocalFile, remote *drive.RemoteFile) bool {
+func (self Md5Comparer) Changed(local *sync.LocalFile, remote *sync.RemoteFile) bool {
 	return remote.Md5() != utils.Md5sum(local.AbsPath())
 }
 
@@ -38,11 +38,11 @@ type CachedMd5Comparer struct {
 	cache map[string]*CachedFileInfo
 }
 
-func (self CachedMd5Comparer) Changed(local *drive.LocalFile, remote *drive.RemoteFile) bool {
+func (self CachedMd5Comparer) Changed(local *sync.LocalFile, remote *sync.RemoteFile) bool {
 	return remote.Md5() != self.md5(local)
 }
 
-func (self CachedMd5Comparer) md5(local *drive.LocalFile) string {
+func (self CachedMd5Comparer) md5(local *sync.LocalFile) string {
 	// See if file exist in cache
 	cached, found := self.cache[local.AbsPath()]
 
@@ -63,7 +63,7 @@ func (self CachedMd5Comparer) md5(local *drive.LocalFile) string {
 	return md5
 }
 
-func (self CachedMd5Comparer) cacheAdd(lf *drive.LocalFile, md5 string) {
+func (self CachedMd5Comparer) cacheAdd(lf *sync.LocalFile, md5 string) {
 	self.cache[lf.AbsPath()] = &CachedFileInfo{
 		Size:     lf.Size(),
 		Modified: lf.Modified().UnixNano(),

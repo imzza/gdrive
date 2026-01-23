@@ -10,7 +10,13 @@ import (
 
 	"github.com/imzza/gdrive/internal/auth"
 	"github.com/imzza/gdrive/internal/cli"
-	"github.com/imzza/gdrive/internal/drive"
+	drivepkg "github.com/imzza/gdrive/internal/drive"
+	"github.com/imzza/gdrive/internal/drive/about"
+	"github.com/imzza/gdrive/internal/drive/changes"
+	"github.com/imzza/gdrive/internal/drive/files"
+	"github.com/imzza/gdrive/internal/drive/permissions"
+	"github.com/imzza/gdrive/internal/drive/revision"
+	syncdrive "github.com/imzza/gdrive/internal/drive/sync"
 	"github.com/imzza/gdrive/internal/utils"
 )
 
@@ -21,7 +27,8 @@ const DefaultCacheFileName = "file_cache.json"
 
 func ListHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).List(drive.ListFilesArgs{
+	drv := newDrive(args)
+	err := drv.ListFiles(files.ListArgs{
 		Out:         os.Stdout,
 		MaxFiles:    args.Int64("maxFiles"),
 		NameWidth:   args.Int64("nameWidth"),
@@ -36,7 +43,8 @@ func ListHandler(ctx cli.Context) {
 
 func RenameHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).Rename(drive.RenameArgs{
+	drv := newDrive(args)
+	err := drv.Rename(files.RenameArgs{
 		Out:  os.Stdout,
 		Id:   args.String("fileId"),
 		Name: args.String("name"),
@@ -46,7 +54,8 @@ func RenameHandler(ctx cli.Context) {
 
 func MoveHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).Move(drive.MoveArgs{
+	drv := newDrive(args)
+	err := drv.Move(files.MoveArgs{
 		Out:      os.Stdout,
 		Id:       args.String("fileId"),
 		FolderId: args.String("folderId"),
@@ -56,7 +65,8 @@ func MoveHandler(ctx cli.Context) {
 
 func CopyHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).Copy(drive.CopyArgs{
+	drv := newDrive(args)
+	err := drv.Copy(files.CopyArgs{
 		Out:      os.Stdout,
 		Id:       args.String("fileId"),
 		FolderId: args.String("folderId"),
@@ -66,7 +76,8 @@ func CopyHandler(ctx cli.Context) {
 
 func ListChangesHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).ListChanges(drive.ListChangesArgs{
+	drv := newDrive(args)
+	err := drv.ListChanges(changes.ListChangesArgs{
 		Out:        os.Stdout,
 		PageToken:  args.String("pageToken"),
 		MaxChanges: args.Int64("maxChanges"),
@@ -80,7 +91,8 @@ func ListChangesHandler(ctx cli.Context) {
 func DownloadHandler(ctx cli.Context) {
 	args := ctx.Args()
 	checkDownloadArgs(args)
-	err := newDrive(args).Download(drive.DownloadArgs{
+	drv := newDrive(args)
+	err := drv.Download(files.DownloadArgs{
 		Out:       os.Stdout,
 		Id:        args.String("fileId"),
 		Force:     args.Bool("force"),
@@ -97,7 +109,8 @@ func DownloadHandler(ctx cli.Context) {
 
 func DownloadQueryHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).DownloadQuery(drive.DownloadQueryArgs{
+	drv := newDrive(args)
+	err := drv.DownloadQuery(files.DownloadQueryArgs{
 		Out:       os.Stdout,
 		Query:     args.String("query"),
 		Force:     args.Bool("force"),
@@ -113,7 +126,8 @@ func DownloadSyncHandler(ctx cli.Context) {
 	args := ctx.Args()
 	configDir := getConfigDir(args)
 	cachePath := filepath.Join(configDir, DefaultCacheFileName)
-	err := newDrive(args).DownloadSync(drive.DownloadSyncArgs{
+	drv := newDrive(args)
+	err := drv.DownloadSync(syncdrive.DownloadSyncArgs{
 		Out:              os.Stdout,
 		Progress:         progressWriter(args.Bool("noProgress")),
 		Path:             args.String("path"),
@@ -129,7 +143,8 @@ func DownloadSyncHandler(ctx cli.Context) {
 
 func DownloadRevisionHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).DownloadRevision(drive.DownloadRevisionArgs{
+	drv := newDrive(args)
+	err := drv.DownloadRevision(revision.DownloadRevisionArgs{
 		Out:        os.Stdout,
 		FileId:     args.String("fileId"),
 		RevisionId: args.String("revId"),
@@ -145,7 +160,8 @@ func DownloadRevisionHandler(ctx cli.Context) {
 func UploadHandler(ctx cli.Context) {
 	args := ctx.Args()
 	checkUploadArgs(args)
-	err := newDrive(args).Upload(drive.UploadArgs{
+	drv := newDrive(args)
+	err := drv.Upload(files.UploadArgs{
 		Out:         os.Stdout,
 		Progress:    progressWriter(args.Bool("noProgress")),
 		Path:        args.String("path"),
@@ -164,7 +180,8 @@ func UploadHandler(ctx cli.Context) {
 
 func UploadStdinHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).UploadStream(drive.UploadStreamArgs{
+	drv := newDrive(args)
+	err := drv.UploadStream(files.UploadStreamArgs{
 		Out:         os.Stdout,
 		In:          os.Stdin,
 		Name:        args.String("name"),
@@ -183,7 +200,8 @@ func UploadSyncHandler(ctx cli.Context) {
 	args := ctx.Args()
 	configDir := getConfigDir(args)
 	cachePath := filepath.Join(configDir, DefaultCacheFileName)
-	err := newDrive(args).UploadSync(drive.UploadSyncArgs{
+	drv := newDrive(args)
+	err := drv.UploadSync(syncdrive.UploadSyncArgs{
 		Out:              os.Stdout,
 		Progress:         progressWriter(args.Bool("noProgress")),
 		Path:             args.String("path"),
@@ -200,7 +218,8 @@ func UploadSyncHandler(ctx cli.Context) {
 
 func UpdateHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).Update(drive.UpdateArgs{
+	drv := newDrive(args)
+	err := drv.Update(files.UpdateArgs{
 		Out:         os.Stdout,
 		Id:          args.String("fileId"),
 		Path:        args.String("path"),
@@ -217,7 +236,8 @@ func UpdateHandler(ctx cli.Context) {
 
 func InfoHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).Info(drive.FileInfoArgs{
+	drv := newDrive(args)
+	err := drv.Info(files.InfoArgs{
 		Out:         os.Stdout,
 		Id:          args.String("fileId"),
 		SizeInBytes: args.Bool("sizeInBytes"),
@@ -227,7 +247,8 @@ func InfoHandler(ctx cli.Context) {
 
 func ImportHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).Import(drive.ImportArgs{
+	drv := newDrive(args)
+	err := drv.Import(files.ImportArgs{
 		Mime:     args.String("mime"),
 		Out:      os.Stdout,
 		Path:     args.String("path"),
@@ -239,7 +260,8 @@ func ImportHandler(ctx cli.Context) {
 
 func ExportHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).Export(drive.ExportArgs{
+	drv := newDrive(args)
+	err := drv.Export(files.ExportArgs{
 		Out:        os.Stdout,
 		Id:         args.String("fileId"),
 		Mime:       args.String("mime"),
@@ -251,7 +273,8 @@ func ExportHandler(ctx cli.Context) {
 
 func ListRevisionsHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).ListRevisions(drive.ListRevisionsArgs{
+	drv := newDrive(args)
+	err := drv.ListRevisions(revision.ListRevisionsArgs{
 		Out:         os.Stdout,
 		Id:          args.String("fileId"),
 		NameWidth:   args.Int64("nameWidth"),
@@ -263,7 +286,8 @@ func ListRevisionsHandler(ctx cli.Context) {
 
 func MkdirHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).Mkdir(drive.MkdirArgs{
+	drv := newDrive(args)
+	err := drv.Mkdir(files.MkdirArgs{
 		Out:         os.Stdout,
 		Name:        args.String("name"),
 		Description: args.String("description"),
@@ -274,7 +298,8 @@ func MkdirHandler(ctx cli.Context) {
 
 func ShareHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).Share(drive.ShareArgs{
+	drv := newDrive(args)
+	err := drv.Share(permissions.ShareArgs{
 		Out:          os.Stdout,
 		FileId:       args.String("fileId"),
 		Role:         args.String("role"),
@@ -288,7 +313,8 @@ func ShareHandler(ctx cli.Context) {
 
 func ShareListHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).ListPermissions(drive.ListPermissionsArgs{
+	drv := newDrive(args)
+	err := drv.ListPermissions(permissions.ListPermissionsArgs{
 		Out:    os.Stdout,
 		FileId: args.String("fileId"),
 	})
@@ -297,7 +323,8 @@ func ShareListHandler(ctx cli.Context) {
 
 func ShareRevokeHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).RevokePermission(drive.RevokePermissionArgs{
+	drv := newDrive(args)
+	err := drv.RevokePermission(permissions.RevokePermissionArgs{
 		Out:          os.Stdout,
 		FileId:       args.String("fileId"),
 		PermissionId: args.String("permissionId"),
@@ -307,7 +334,8 @@ func ShareRevokeHandler(ctx cli.Context) {
 
 func DeleteHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).Delete(drive.DeleteArgs{
+	drv := newDrive(args)
+	err := drv.Delete(files.DeleteArgs{
 		Out:       os.Stdout,
 		Id:        args.String("fileId"),
 		Recursive: args.Bool("recursive"),
@@ -317,7 +345,8 @@ func DeleteHandler(ctx cli.Context) {
 
 func ListSyncHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).ListSync(drive.ListSyncArgs{
+	drv := newDrive(args)
+	err := drv.ListSync(syncdrive.ListSyncArgs{
 		Out:        os.Stdout,
 		SkipHeader: args.Bool("skipHeader"),
 	})
@@ -326,7 +355,8 @@ func ListSyncHandler(ctx cli.Context) {
 
 func ListRecursiveSyncHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).ListRecursiveSync(drive.ListRecursiveSyncArgs{
+	drv := newDrive(args)
+	err := drv.ListRecursiveSync(syncdrive.ListRecursiveSyncArgs{
 		Out:         os.Stdout,
 		RootId:      args.String("fileId"),
 		SkipHeader:  args.Bool("skipHeader"),
@@ -339,7 +369,8 @@ func ListRecursiveSyncHandler(ctx cli.Context) {
 
 func DeleteRevisionHandler(ctx cli.Context) {
 	args := ctx.Args()
-	err := newDrive(args).DeleteRevision(drive.DeleteRevisionArgs{
+	drv := newDrive(args)
+	err := drv.DeleteRevision(revision.DeleteRevisionArgs{
 		Out:        os.Stdout,
 		FileId:     args.String("fileId"),
 		RevisionId: args.String("revId"),
@@ -370,7 +401,8 @@ func AboutHandler(ctx cli.Context) {
 	}
 
 	fmt.Println("")
-	err := newDrive(args).About(drive.AboutArgs{
+	drv := newDrive(args)
+	err := drv.About(about.AboutArgs{
 		Out:         os.Stdout,
 		SizeInBytes: args.Bool("sizeInBytes"),
 	})
@@ -428,13 +460,13 @@ func getConfigDir(args cli.Arguments) string {
 	return configDir
 }
 
-func newDrive(args cli.Arguments) *drive.Drive {
+func newDrive(args cli.Arguments) *drivepkg.Drive {
 	oauth, err := getOauthClient(args)
 	if err != nil {
 		utils.ExitF("Failed getting oauth client: %s", err.Error())
 	}
 
-	client, err := drive.New(oauth)
+	client, err := drivepkg.New(oauth)
 	if err != nil {
 		utils.ExitF("Failed getting drive: %s", err.Error())
 	}
@@ -483,7 +515,7 @@ func durationInSeconds(seconds int64) time.Duration {
 	return time.Second * time.Duration(seconds)
 }
 
-func conflictResolution(args cli.Arguments) drive.ConflictResolution {
+func conflictResolution(args cli.Arguments) syncdrive.ConflictResolution {
 	keepLocal := args.Bool("keepLocal")
 	keepRemote := args.Bool("keepRemote")
 	keepLargest := args.Bool("keepLargest")
@@ -493,18 +525,18 @@ func conflictResolution(args cli.Arguments) drive.ConflictResolution {
 	}
 
 	if keepLocal {
-		return drive.KeepLocal
+		return syncdrive.KeepLocal
 	}
 
 	if keepRemote {
-		return drive.KeepRemote
+		return syncdrive.KeepRemote
 	}
 
 	if keepLargest {
-		return drive.KeepLargest
+		return syncdrive.KeepLargest
 	}
 
-	return drive.NoResolution
+	return syncdrive.NoResolution
 }
 
 func checkUploadArgs(args cli.Arguments) {
