@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/imzza/gdrive/internal/cli"
+	"github.com/imzza/gdrive/internal/handlers"
+	"github.com/imzza/gdrive/internal/utils"
 )
 
 const Name = "gdrive"
@@ -20,7 +22,7 @@ const DefaultQuery = "trashed = false and 'me' in owners"
 const DefaultShareRole = "reader"
 const DefaultShareType = "anyone"
 
-var DefaultConfigDir = GetDefaultConfigDir()
+var DefaultConfigDir = utils.GetDefaultConfigDir()
 
 func main() {
 	globalFlags := []cli.Flag{
@@ -47,11 +49,115 @@ func main() {
 		},
 	}
 
+	handlers.AppName = Name
+	handlers.AppVersion = Version
+
 	handlers := []*cli.Handler{
-		&cli.Handler{
-			Pattern:     "[global] list [options]",
+		{
+			Pattern:     "[global] account add [options]",
+			Description: "Add an account",
+			Callback:    handlers.AccountAddHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+				cli.NewFlagGroup("options",
+					cli.StringFlag{
+						Name:        "name",
+						Patterns:    []string{"--name"},
+						Description: "Account name (defaults to the account email)",
+					},
+				),
+			},
+		},
+		{
+			Pattern:     "[global] account list",
+			Description: "List all accounts",
+			Callback:    handlers.AccountListHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] account current",
+			Description: "Print current account",
+			Callback:    handlers.AccountCurrentHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] account switch <name>",
+			Description: "Switch to a different account",
+			Callback:    handlers.AccountSwitchHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] account remove <name>",
+			Description: "Remove an account",
+			Callback:    handlers.AccountRemoveHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] account export <name>",
+			Description: "Export account to an archive",
+			Callback:    handlers.AccountExportHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] account import <path>",
+			Description: "Import account from an archive",
+			Callback:    handlers.AccountImportHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] account help",
+			Description: "Print this message or the help of the given subcommand(s)",
+			Callback:    handlers.AccountHelpHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] drives list [options]",
+			Description: "List drives",
+			Callback:    handlers.DrivesListHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+				cli.NewFlagGroup("options",
+					cli.BoolFlag{
+						Name:        "skipHeader",
+						Patterns:    []string{"--no-header"},
+						Description: "Dont print the header",
+						OmitValue:   true,
+					},
+					cli.StringFlag{
+						Name:         "fieldSeparator",
+						Patterns:     []string{"--field-separator"},
+						Description:  "Field separator",
+						DefaultValue: "\t",
+					},
+				),
+			},
+		},
+		{
+			Pattern:     "[global] drives help",
+			Description: "Print this message or the help of the given subcommand(s)",
+			Callback:    handlers.DrivesHelpHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] files list [options]",
 			Description: "List files",
-			Callback:    listHandler,
+			Callback:    handlers.ListHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -99,10 +205,42 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] download [options] <fileId>",
+		{
+			Pattern:     "[global] files sync help",
+			Description: "Print command help",
+			Callback:    handlers.FilesSyncHelpHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] files sync --help",
+			Description: "Print command help",
+			Callback:    handlers.FilesSyncHelpHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] files <subcommand> help",
+			Description: "Print command help",
+			Callback:    handlers.FilesSubcommandHelpHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] files <subcommand> --help",
+			Description: "Print command help",
+			Callback:    handlers.FilesSubcommandHelpHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] files download [options] <fileId>",
 			Description: "Download file or directory",
-			Callback:    downloadHandler,
+			Callback:    handlers.DownloadHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -156,10 +294,10 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] download query [options] <query>",
+		{
+			Pattern:     "[global] files download query [options] <query>",
 			Description: "Download all files and directories matching query",
-			Callback:    downloadQueryHandler,
+			Callback:    handlers.DownloadQueryHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -195,10 +333,10 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] upload [options] <path>",
+		{
+			Pattern:     "[global] files upload [options] <path>",
 			Description: "Upload file or directory",
-			Callback:    uploadHandler,
+			Callback:    handlers.UploadHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -261,10 +399,10 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] upload - [options] <name>",
+		{
+			Pattern:     "[global] files upload - [options] <name>",
 			Description: "Upload file from stdin",
-			Callback:    uploadStdinHandler,
+			Callback:    handlers.UploadStdinHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -310,10 +448,10 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] update [options] <fileId> <path>",
+		{
+			Pattern:     "[global] files update [options] <fileId> <path>",
 			Description: "Update file, this creates a new revision of the file",
-			Callback:    updateHandler,
+			Callback:    handlers.UpdateHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -358,10 +496,10 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] info [options] <fileId>",
+		{
+			Pattern:     "[global] files info [options] <fileId>",
 			Description: "Show file info",
-			Callback:    infoHandler,
+			Callback:    handlers.InfoHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -374,10 +512,10 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] mkdir [options] <name>",
+		{
+			Pattern:     "[global] files mkdir [options] <name>",
 			Description: "Create directory",
-			Callback:    mkdirHandler,
+			Callback:    handlers.MkdirHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -394,10 +532,42 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] share [options] <fileId>",
+		{
+			Pattern:     "[global] files help",
+			Description: "Print this message or the help of the given subcommand(s)",
+			Callback:    handlers.FilesHelpHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] files rename <fileId> <name>",
+			Description: "Rename file/directory",
+			Callback:    handlers.RenameHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] files move <fileId> <folderId>",
+			Description: "Move file/directory",
+			Callback:    handlers.MoveHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] files copy <fileId> <folderId>",
+			Description: "Copy file",
+			Callback:    handlers.CopyHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] permissions share [options] <fileId>",
 			Description: "Share file or directory",
-			Callback:    shareHandler,
+			Callback:    handlers.ShareHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -438,26 +608,34 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] share list <fileId>",
+		{
+			Pattern:     "[global] permissions list <fileId>",
 			Description: "List files permissions",
-			Callback:    shareListHandler,
+			Callback:    handlers.ShareListHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] share revoke <fileId> <permissionId>",
+		{
+			Pattern:     "[global] permissions revoke <fileId> <permissionId>",
 			Description: "Revoke permission",
-			Callback:    shareRevokeHandler,
+			Callback:    handlers.ShareRevokeHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] delete [options] <fileId>",
+		{
+			Pattern:     "[global] permissions help",
+			Description: "Print this message or the help of the given subcommand(s)",
+			Callback:    handlers.PermissionsHelpHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] files delete [options] <fileId>",
 			Description: "Delete file or directory",
-			Callback:    deleteHandler,
+			Callback:    handlers.DeleteHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -470,10 +648,10 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] sync list [options]",
+		{
+			Pattern:     "[global] files sync list [options]",
 			Description: "List all syncable directories on drive",
-			Callback:    listSyncHandler,
+			Callback:    handlers.ListSyncHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -486,10 +664,10 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] sync content [options] <fileId>",
+		{
+			Pattern:     "[global] files sync content [options] <fileId>",
 			Description: "List content of syncable directory",
-			Callback:    listRecursiveSyncHandler,
+			Callback:    handlers.ListRecursiveSyncHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -519,10 +697,10 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] sync download [options] <fileId> <path>",
+		{
+			Pattern:     "[global] files sync download [options] <fileId> <path>",
 			Description: "Sync drive directory to local directory",
-			Callback:    downloadSyncHandler,
+			Callback:    handlers.DownloadSyncHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -571,10 +749,10 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] sync upload [options] <path> <fileId>",
+		{
+			Pattern:     "[global] files sync upload [options] <path> <fileId>",
 			Description: "Sync local directory to drive",
-			Callback:    uploadSyncHandler,
+			Callback:    handlers.UploadSyncHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -629,10 +807,10 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] changes [options]",
+		{
+			Pattern:     "[global] files changes [options]",
 			Description: "List file changes",
-			Callback:    listChangesHandler,
+			Callback:    handlers.ListChangesHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -645,13 +823,13 @@ func main() {
 					cli.StringFlag{
 						Name:         "pageToken",
 						Patterns:     []string{"--since"},
-						Description:  fmt.Sprintf("Page token to start listing changes from"),
+						Description:  fmt.Sprint("Page token to start listing changes from"),
 						DefaultValue: "1",
 					},
 					cli.BoolFlag{
 						Name:        "now",
 						Patterns:    []string{"--now"},
-						Description: fmt.Sprintf("Get latest page token"),
+						Description: fmt.Sprint("Get latest page token"),
 						OmitValue:   true,
 					},
 					cli.IntFlag{
@@ -669,10 +847,10 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] revision list [options] <fileId>",
+		{
+			Pattern:     "[global] files revision list [options] <fileId>",
 			Description: "List file revisions",
-			Callback:    listRevisionsHandler,
+			Callback:    handlers.ListRevisionsHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -697,10 +875,10 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] revision download [options] <fileId> <revId>",
+		{
+			Pattern:     "[global] files revision download [options] <fileId> <revId>",
 			Description: "Download revision",
-			Callback:    downloadRevisionHandler,
+			Callback:    handlers.DownloadRevisionHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -736,18 +914,18 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] revision delete <fileId> <revId>",
+		{
+			Pattern:     "[global] files revision delete <fileId> <revId>",
 			Description: "Delete file revision",
-			Callback:    deleteRevisionHandler,
+			Callback:    handlers.DeleteRevisionHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] import [options] <path>",
+		{
+			Pattern:     "[global] files import [options] <path>",
 			Description: "Upload and convert file to a google document, see 'about import' for available conversions",
-			Callback:    importHandler,
+			Callback:    handlers.ImportHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -770,10 +948,10 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] export [options] <fileId>",
+		{
+			Pattern:     "[global] files export [options] <fileId>",
 			Description: "Export a google document",
-			Callback:    exportHandler,
+			Callback:    handlers.ExportHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -797,10 +975,10 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
+		{
 			Pattern:     "[global] about [options]",
 			Description: "Google drive metadata, quota usage",
-			Callback:    aboutHandler,
+			Callback:    handlers.AboutHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 				cli.NewFlagGroup("options",
@@ -813,47 +991,36 @@ func main() {
 				),
 			},
 		},
-		&cli.Handler{
-			Pattern:     "[global] about import",
-			Description: "Show supported import formats",
-			Callback:    aboutImportHandler,
-			FlagGroups: cli.FlagGroups{
-				cli.NewFlagGroup("global", globalFlags...),
-			},
-		},
-		&cli.Handler{
-			Pattern:     "[global] about export",
-			Description: "Show supported export formats",
-			Callback:    aboutExportHandler,
-			FlagGroups: cli.FlagGroups{
-				cli.NewFlagGroup("global", globalFlags...),
-			},
-		},
-		&cli.Handler{
+		{
 			Pattern:     "version",
 			Description: "Print application version",
-			Callback:    printVersion,
+			Callback:    handlers.PrintVersion,
 		},
-		&cli.Handler{
+		{
 			Pattern:     "help",
 			Description: "Print help",
-			Callback:    printHelp,
+			Callback:    handlers.PrintHelp,
 		},
-		&cli.Handler{
+		{
 			Pattern:     "help <command>",
 			Description: "Print command help",
-			Callback:    printCommandHelp,
+			Callback:    handlers.PrintCommandHelp,
 		},
-		&cli.Handler{
+		{
 			Pattern:     "help <command> <subcommand>",
 			Description: "Print subcommand help",
-			Callback:    printSubCommandHelp,
+			Callback:    handlers.PrintSubCommandHelp,
+		},
+		{
+			Pattern:     "help <command> <subcommand> <subsubcommand>",
+			Description: "Print subcommand help",
+			Callback:    handlers.PrintSubSubCommandHelp,
 		},
 	}
 
 	cli.SetHandlers(handlers)
 
 	if ok := cli.Handle(os.Args[1:]); !ok {
-		ExitF("No valid arguments given, use '%s help' to see available commands", Name)
+		utils.ExitF("No valid arguments given, use '%s help' to see available commands", Name)
 	}
 }

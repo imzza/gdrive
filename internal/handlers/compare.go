@@ -1,9 +1,11 @@
-package main
+package handlers
 
 import (
 	"encoding/json"
-	"github.com/imzza/gdrive/internal/drive"
 	"os"
+
+	"github.com/imzza/gdrive/internal/drive"
+	"github.com/imzza/gdrive/internal/utils"
 )
 
 const MinCacheFileSize = 5 * 1024 * 1024
@@ -11,7 +13,7 @@ const MinCacheFileSize = 5 * 1024 * 1024
 type Md5Comparer struct{}
 
 func (self Md5Comparer) Changed(local *drive.LocalFile, remote *drive.RemoteFile) bool {
-	return remote.Md5() != md5sum(local.AbsPath())
+	return remote.Md5() != utils.Md5sum(local.AbsPath())
 }
 
 type CachedFileInfo struct {
@@ -50,7 +52,7 @@ func (self CachedMd5Comparer) md5(local *drive.LocalFile) string {
 	}
 
 	// Calculate new md5 sum
-	md5 := md5sum(local.AbsPath())
+	md5 := utils.Md5sum(local.AbsPath())
 
 	// Cache file info if file meets size criteria
 	if local.Size() > MinCacheFileSize {
@@ -70,5 +72,5 @@ func (self CachedMd5Comparer) cacheAdd(lf *drive.LocalFile, md5 string) {
 }
 
 func (self CachedMd5Comparer) persist() {
-	writeJson(self.path, self.cache)
+	utils.WriteJSON(self.path, self.cache)
 }

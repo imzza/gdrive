@@ -28,6 +28,19 @@ func (self *Drive) About(args AboutArgs) (err error) {
 	return
 }
 
+func (self *Drive) UserEmail() (string, error) {
+	about, err := self.service.About.Get().Fields("user").Do()
+	if err != nil {
+		return "", fmt.Errorf("Failed to get user info: %s", err)
+	}
+
+	if about.User == nil || about.User.EmailAddress == "" {
+		return "", fmt.Errorf("Failed to get user email")
+	}
+
+	return about.User.EmailAddress, nil
+}
+
 type AboutImportArgs struct {
 	Out io.Writer
 }
