@@ -1,4 +1,4 @@
-package drive
+package utils
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 const MaxDrawInterval = time.Second * 1
 const MaxRateInterval = time.Second * 3
 
-func getProgressReader(r io.Reader, w io.Writer, size int64) io.Reader {
+func GetProgressReader(r io.Reader, w io.Writer, size int64) io.Reader {
 	// Don't wrap reader if output is discarded or size is too small
 	if w == io.Discard || (size > 0 && size < 1024*1024) {
 		return r
@@ -53,7 +53,7 @@ func (self *Progress) Read(p []byte) (int, error) {
 
 	// Update rate every x seconds
 	if self.rateUpdated.Add(MaxRateInterval).Before(now) {
-		self.rate = calcRate(newProgress-self.rateProgress, self.rateUpdated, now)
+		self.rate = CalcRate(newProgress-self.rateProgress, self.rateUpdated, now)
 		self.rateUpdated = now
 		self.rateProgress = newProgress
 	}
@@ -78,16 +78,16 @@ func (self *Progress) draw(isLast bool) {
 	self.clear()
 
 	// Print progress
-	fmt.Fprintf(self.Writer, "%s", formatSize(self.progress, false))
+	fmt.Fprintf(self.Writer, "%s", FormatSize(self.progress, false))
 
 	// Print total size
 	if self.Size > 0 {
-		fmt.Fprintf(self.Writer, "/%s", formatSize(self.Size, false))
+		fmt.Fprintf(self.Writer, "/%s", FormatSize(self.Size, false))
 	}
 
 	// Print rate
 	if self.rate > 0 {
-		fmt.Fprintf(self.Writer, ", Rate: %s/s", formatSize(self.rate, false))
+		fmt.Fprintf(self.Writer, ", Rate: %s/s", FormatSize(self.rate, false))
 	}
 
 	if isLast {

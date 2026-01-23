@@ -3,13 +3,15 @@ package drive
 import (
 	"bytes"
 	"fmt"
-	"google.golang.org/api/drive/v3"
-	"google.golang.org/api/googleapi"
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"time"
+
+	"github.com/imzza/gdrive/internal/utils"
+	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/googleapi"
 )
 
 type UploadSyncArgs struct {
@@ -306,10 +308,10 @@ func (self *Drive) uploadMissingFile(parentId string, lf *LocalFile, args Upload
 	chunkSize := googleapi.ChunkSize(int(args.ChunkSize))
 
 	// Wrap file in progress reader
-	progressReader := getProgressReader(srcFile, args.Progress, lf.info.Size())
+	progressReader := utils.GetProgressReader(srcFile, args.Progress, lf.info.Size())
 
 	// Wrap reader in timeout reader
-	reader, ctx := getTimeoutReaderContext(progressReader, args.Timeout)
+	reader, ctx := utils.GetTimeoutReaderContext(progressReader, args.Timeout)
 
 	_, err = self.service.Files.Create(dstFile).Fields("id", "name", "size", "md5Checksum").Context(ctx).Media(reader, chunkSize).Do()
 	if err != nil {
@@ -347,10 +349,10 @@ func (self *Drive) updateChangedFile(cf *changedFile, args UploadSyncArgs, try i
 	chunkSize := googleapi.ChunkSize(int(args.ChunkSize))
 
 	// Wrap file in progress reader
-	progressReader := getProgressReader(srcFile, args.Progress, cf.local.info.Size())
+	progressReader := utils.GetProgressReader(srcFile, args.Progress, cf.local.info.Size())
 
 	// Wrap reader in timeout reader
-	reader, ctx := getTimeoutReaderContext(progressReader, args.Timeout)
+	reader, ctx := utils.GetTimeoutReaderContext(progressReader, args.Timeout)
 
 	_, err = self.service.Files.Update(cf.remote.file.Id, dstFile).Context(ctx).Media(reader, chunkSize).Do()
 	if err != nil {

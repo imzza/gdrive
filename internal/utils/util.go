@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 )
 
 func GetDefaultConfigDir() string {
@@ -122,4 +124,40 @@ func Md5sum(path string) string {
 
 	io.Copy(h, f)
 	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func FormatSize(bytes int64, forceBytes bool) string {
+	if bytes == 0 {
+		return ""
+	}
+
+	if forceBytes {
+		return fmt.Sprintf("%v B", bytes)
+	}
+
+	units := []string{"B", "KB", "MB", "GB", "TB", "PB"}
+
+	var i int
+	value := float64(bytes)
+
+	for value > 1000 {
+		value /= 1000
+		i++
+	}
+	return fmt.Sprintf("%.1f %s", value, units[i])
+}
+
+func CalcRate(bytes int64, start, end time.Time) int64 {
+	seconds := float64(end.Sub(start).Seconds())
+	if seconds < 1.0 {
+		return bytes
+	}
+	return round(float64(bytes) / seconds)
+}
+
+func round(n float64) int64 {
+	if n < 0 {
+		return int64(math.Ceil(n - 0.5))
+	}
+	return int64(math.Floor(n + 0.5))
 }

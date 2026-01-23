@@ -5,6 +5,8 @@ import (
 	"io"
 	"path/filepath"
 	"time"
+
+	"github.com/imzza/gdrive/internal/utils"
 )
 
 type DownloadRevisionArgs struct {
@@ -31,7 +33,7 @@ func (self *Drive) DownloadRevision(args DownloadRevisionArgs) (err error) {
 	}
 
 	// Get timeout reader wrapper and context
-	timeoutReaderWrapper, ctx := getTimeoutReaderWrapperContext(args.Timeout)
+	timeoutReaderWrapper, ctx := utils.GetTimeoutReaderWrapperContext(args.Timeout)
 
 	res, err := getRev.Context(ctx).Download()
 	if err != nil {

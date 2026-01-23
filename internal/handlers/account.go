@@ -21,28 +21,42 @@ import (
 )
 
 const AccountConfigFilename = "account.json"
+const AccountMetaFilename = "account_meta.json"
+const ServiceAccountFilename = "service_account.json"
+
+const accountTypeUser = "user"
+const accountTypeService = "service"
 
 type accountConfig struct {
 	Current string `json:"current"`
+}
+
+type accountMeta struct {
+	Type               string `json:"type"`
+	ServiceAccountFile string `json:"service_account_file,omitempty"`
 }
 
 func AccountAddHandler(ctx cli.Context) {
 	args := ctx.Args()
 	baseDir := getBaseConfigDir(args)
 	name := strings.TrimSpace(args.String("name"))
-
-	secret := promptAccountSecret()
+	serviceAccountPath := strings.TrimSpace(args.String("serviceAccount"))
 
 	if err := validateAccountName(name); err != nil && name != "" {
 		utils.ExitF("Invalid account name: %s", err)
 	}
 
 	loginEmail := ""
-	if name == "" {
-		name = addAccountWithEmail(baseDir, secret, args)
-		loginEmail = name
+	if serviceAccountPath != "" {
+		loginEmail = addAccountWithServiceAccount(baseDir, name, serviceAccountPath)
 	} else {
-		loginEmail = addAccountWithName(baseDir, name, secret, args)
+		secret := promptAccountSecret()
+		if name == "" {
+			name = addAccountWithEmail(baseDir, secret, args)
+			loginEmail = name
+		} else {
+			loginEmail = addAccountWithName(baseDir, name, secret, args)
+		}
 	}
 
 	fmt.Println("")
@@ -71,10 +85,13 @@ func AccountListHandler(ctx cli.Context) {
 	}
 
 	for _, account := range accounts {
+		accountPath := accountDir(baseDir, account)
+		meta := accountMetaOrDefault(accountPath)
+		label := formatAccountLabel(account, meta.Type)
 		if account == current && current != "" {
-			fmt.Printf("* %s\n", account)
+			fmt.Printf("* %s\n", label)
 		} else {
-			fmt.Printf("  %s\n", account)
+			fmt.Printf("  %s\n", label)
 		}
 	}
 }
@@ -94,7 +111,8 @@ func AccountCurrentHandler(ctx cli.Context) {
 		utils.ExitF("No account selected. Use `gdrive account switch` to select an account.")
 	}
 
-	fmt.Println(config.Current)
+	meta := accountMetaOrDefault(accountDir(baseDir, config.Current))
+	fmt.Printf("%s (%s)\n", config.Current, meta.Type)
 }
 
 func AccountSwitchHandler(ctx cli.Context) {
@@ -247,6 +265,10 @@ func addAccountWithName(baseDir, name string, secret utils.AccountSecret, args c
 		utils.ExitF("Failed to save account config: %s", err)
 	}
 
+	if err := saveAccountMeta(accountPath, accountMeta{Type: accountTypeUser}); err != nil {
+		utils.ExitF("Failed to save account metadata: %s", err)
+	}
+
 	removeLegacyToken(accountPath)
 
 	return email
@@ -304,7 +326,55 @@ func addAccountWithEmail(baseDir string, secret utils.AccountSecret, args cli.Ar
 		utils.ExitF("Failed to save account config: %s", err)
 	}
 
+	if err := saveAccountMeta(accountPath, accountMeta{Type: accountTypeUser}); err != nil {
+		utils.ExitF("Failed to save account metadata: %s", err)
+	}
+
 	removeLegacyToken(accountPath)
+
+	return email
+}
+
+func addAccountWithServiceAccount(baseDir, name, serviceAccountPath string) string {
+	if err := os.MkdirAll(baseDir, 0700); err != nil {
+		utils.ExitF("Failed to create config directory: %s", err)
+	}
+
+	resolvedPath := resolveServiceAccountPath(baseDir, serviceAccountPath)
+	email, err := readServiceAccountEmail(resolvedPath)
+	if err != nil {
+		utils.ExitF("Failed to read service account: %s", err)
+	}
+
+	if name == "" {
+		name = email
+	}
+
+	if err := validateAccountName(name); err != nil {
+		utils.ExitF("Invalid account name: %s", err)
+	}
+
+	if accountExists(baseDir, name) {
+		utils.ExitF("Account '%s' already exists", name)
+	}
+
+	accountPath := accountDir(baseDir, name)
+	if err := os.MkdirAll(accountPath, 0700); err != nil {
+		utils.ExitF("Failed to create account directory: %s", err)
+	}
+
+	destPath := utils.ConfigFilePath(accountPath, ServiceAccountFilename)
+	if err := copyServiceAccountFile(resolvedPath, destPath); err != nil {
+		utils.ExitF("Failed to save service account: %s", err)
+	}
+
+	if err := saveAccountMeta(accountPath, accountMeta{Type: accountTypeService, ServiceAccountFile: ServiceAccountFilename}); err != nil {
+		utils.ExitF("Failed to save account metadata: %s", err)
+	}
+
+	if err := saveAccountConfig(baseDir, accountConfig{Current: name}); err != nil {
+		utils.ExitF("Failed to save account config: %s", err)
+	}
 
 	return email
 }
@@ -373,6 +443,15 @@ func accountExists(baseDir, name string) bool {
 	if _, err := os.Stat(accountPath); err != nil {
 		return false
 	}
+
+	meta := accountMetaOrDefault(accountPath)
+	if meta.Type == accountTypeService {
+		if _, err := os.Stat(utils.ConfigFilePath(accountPath, meta.ServiceAccountFile)); err != nil {
+			return false
+		}
+		return true
+	}
+
 	if _, err := os.Stat(utils.ConfigFilePath(accountPath, TokenFilename)); err != nil {
 		return false
 	}
@@ -385,6 +464,10 @@ func accountDir(baseDir, name string) string {
 
 func accountConfigPath(baseDir string) string {
 	return filepath.Join(baseDir, AccountConfigFilename)
+}
+
+func accountMetaPath(accountPath string) string {
+	return filepath.Join(accountPath, AccountMetaFilename)
 }
 
 func loadAccountConfig(baseDir string) (accountConfig, error) {
@@ -406,6 +489,51 @@ func saveAccountConfig(baseDir string, config accountConfig) error {
 		return err
 	}
 	return utils.WriteJSON(accountConfigPath(baseDir), config)
+}
+
+func loadAccountMeta(accountPath string) (accountMeta, error) {
+	content, err := os.ReadFile(accountMetaPath(accountPath))
+	if err != nil {
+		return accountMeta{}, err
+	}
+
+	var meta accountMeta
+	if err := json.Unmarshal(content, &meta); err != nil {
+		return accountMeta{}, err
+	}
+
+	if meta.Type == "" {
+		meta.Type = accountTypeUser
+	}
+	if meta.Type == accountTypeService && meta.ServiceAccountFile == "" {
+		meta.ServiceAccountFile = ServiceAccountFilename
+	}
+
+	return meta, nil
+}
+
+func accountMetaOrDefault(accountPath string) accountMeta {
+	meta, err := loadAccountMeta(accountPath)
+	if err != nil {
+		return accountMeta{Type: accountTypeUser}
+	}
+	if meta.Type == "" {
+		meta.Type = accountTypeUser
+	}
+	if meta.Type == accountTypeService && meta.ServiceAccountFile == "" {
+		meta.ServiceAccountFile = ServiceAccountFilename
+	}
+	return meta
+}
+
+func saveAccountMeta(accountPath string, meta accountMeta) error {
+	if meta.Type == "" {
+		meta.Type = accountTypeUser
+	}
+	if err := utils.WriteJSON(accountMetaPath(accountPath), meta); err != nil {
+		return err
+	}
+	return os.Chmod(accountMetaPath(accountPath), 0600)
 }
 
 func listAccounts(baseDir string) ([]string, error) {
@@ -469,6 +597,59 @@ func promptInput(label string) string {
 		utils.ExitF("Failed reading input: %s", err)
 	}
 	return strings.TrimSpace(line)
+}
+
+func formatAccountLabel(name, accountType string) string {
+	if accountType == "" {
+		accountType = accountTypeUser
+	}
+	return fmt.Sprintf("[%s] %s", accountType, name)
+}
+
+func resolveServiceAccountPath(baseDir, serviceAccountPath string) string {
+	if filepath.IsAbs(serviceAccountPath) {
+		return serviceAccountPath
+	}
+	return utils.ConfigFilePath(baseDir, serviceAccountPath)
+}
+
+func readServiceAccountEmail(path string) (string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	var payload struct {
+		ClientEmail string `json:"client_email"`
+	}
+	if err := json.Unmarshal(content, &payload); err != nil {
+		return "", err
+	}
+	if payload.ClientEmail == "" {
+		return "", fmt.Errorf("service account json missing client_email")
+	}
+	return payload.ClientEmail, nil
+}
+
+func copyServiceAccountFile(srcPath, destPath string) error {
+	src, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	if err := os.MkdirAll(filepath.Dir(destPath), 0700); err != nil {
+		return err
+	}
+
+	dest, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+	defer dest.Close()
+
+	_, err = io.Copy(dest, src)
+	return err
 }
 
 func normalizeArchiveName(name string) string {

@@ -2,13 +2,15 @@ package drive
 
 import (
 	"fmt"
-	"google.golang.org/api/drive/v3"
-	"google.golang.org/api/googleapi"
 	"io"
 	"mime"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/imzza/gdrive/internal/utils"
+	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/googleapi"
 )
 
 type UploadArgs struct {
@@ -176,10 +178,10 @@ func (self *Drive) uploadFile(args UploadArgs) (*drive.File, int64, error) {
 	chunkSize := googleapi.ChunkSize(int(args.ChunkSize))
 
 	// Wrap file in progress reader
-	progressReader := getProgressReader(srcFile, args.Progress, srcFileInfo.Size())
+	progressReader := utils.GetProgressReader(srcFile, args.Progress, srcFileInfo.Size())
 
 	// Wrap reader in timeout reader
-	reader, ctx := getTimeoutReaderContext(progressReader, args.Timeout)
+	reader, ctx := utils.GetTimeoutReaderContext(progressReader, args.Timeout)
 
 	fmt.Fprintf(args.Out, "Uploading %s\n", args.Path)
 	started := time.Now()
@@ -231,10 +233,10 @@ func (self *Drive) UploadStream(args UploadStreamArgs) error {
 	chunkSize := googleapi.ChunkSize(int(args.ChunkSize))
 
 	// Wrap file in progress reader
-	progressReader := getProgressReader(args.In, args.Progress, 0)
+	progressReader := utils.GetProgressReader(args.In, args.Progress, 0)
 
 	// Wrap reader in timeout reader
-	reader, ctx := getTimeoutReaderContext(progressReader, args.Timeout)
+	reader, ctx := utils.GetTimeoutReaderContext(progressReader, args.Timeout)
 
 	fmt.Fprintf(args.Out, "Uploading %s\n", dstFile.Name)
 	started := time.Now()

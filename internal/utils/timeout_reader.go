@@ -1,4 +1,4 @@
-package drive
+package utils
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 
 const TimeoutTimerInterval = time.Second * 10
 
-type timeoutReaderWrapper func(io.Reader) io.Reader
+type TimeoutReaderWrapper func(io.Reader) io.Reader
 
-func getTimeoutReaderWrapperContext(timeout time.Duration) (timeoutReaderWrapper, context.Context) {
+func GetTimeoutReaderWrapperContext(timeout time.Duration) (TimeoutReaderWrapper, context.Context) {
 	if timeout == 0 {
 		return func(r io.Reader) io.Reader {
 			return r
@@ -25,7 +25,7 @@ func getTimeoutReaderWrapperContext(timeout time.Duration) (timeoutReaderWrapper
 	return wrapper, ctx
 }
 
-func getTimeoutReaderContext(r io.Reader, timeout time.Duration) (io.Reader, context.Context) {
+func GetTimeoutReaderContext(r io.Reader, timeout time.Duration) (io.Reader, context.Context) {
 	// Return untouched reader if timeout is 0
 	if timeout == 0 {
 		return r, context.Background()

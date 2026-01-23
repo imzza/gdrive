@@ -4,6 +4,9 @@
         "https://www.schemastore.org/github-release-config.json": "file:///d%3A/webserver/gdrive/.github/workflows/zizmor.yml"
     },
     "cSpell.words": [
-        "googleapi"
+        "gdrive",
+        "googleapi",
+        "imzza",
+        "subsubcommand"
     ]
 }

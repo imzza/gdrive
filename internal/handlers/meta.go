@@ -66,6 +66,16 @@ func FilesSyncHelpHandler(ctx cli.Context) {
 	printScopedHelp(ctx, []string{"files", "sync"})
 }
 
+func FilesSyncSubcommandHelpHandler(ctx cli.Context) {
+	args := ctx.Args()
+	printCommandPrefixHelp(ctx, "files", "sync", args.String("subcommand"))
+}
+
+func FilesRevisionSubcommandHelpHandler(ctx cli.Context) {
+	args := ctx.Args()
+	printCommandPrefixHelp(ctx, "files", "revision", args.String("subcommand"))
+}
+
 func printCommandPrefixHelp(ctx cli.Context, prefix ...string) {
 	handler := getHandler(ctx.Handlers(), prefix)
 

@@ -1,8 +1,11 @@
 package drive
 
 import (
-	"google.golang.org/api/drive/v3"
+	"context"
 	"net/http"
+
+	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
 )
 
 type Drive struct {
@@ -10,7 +13,7 @@ type Drive struct {
 }
 
 func New(client *http.Client) (*Drive, error) {
-	service, err := drive.New(client)
+	service, err := drive.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
 		return nil, err
 	}

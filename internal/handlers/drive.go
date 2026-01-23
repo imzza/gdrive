@@ -88,6 +88,7 @@ func DownloadHandler(ctx cli.Context) {
 		Path:      args.String("path"),
 		Delete:    args.Bool("delete"),
 		Recursive: args.Bool("recursive"),
+		NoParent:  args.Bool("noParent"),
 		Stdout:    args.Bool("stdout"),
 		Progress:  progressWriter(args.Bool("noProgress")),
 		Timeout:   durationInSeconds(args.Int64("timeout")),
@@ -122,7 +123,7 @@ func DownloadSyncHandler(ctx cli.Context) {
 		DeleteExtraneous: args.Bool("deleteExtraneous"),
 		Timeout:          durationInSeconds(args.Int64("timeout")),
 		Resolution:       conflictResolution(args),
-		Comparer:         NewCachedMd5Comparer(cachePath),
+		Comparer:         drive.NewCachedMd5Comparer(cachePath),
 	})
 	utils.CheckErr(err)
 }
@@ -193,7 +194,7 @@ func UploadSyncHandler(ctx cli.Context) {
 		ChunkSize:        args.Int64("chunksize"),
 		Timeout:          durationInSeconds(args.Int64("timeout")),
 		Resolution:       conflictResolution(args),
-		Comparer:         NewCachedMd5Comparer(cachePath),
+		Comparer:         drive.NewCachedMd5Comparer(cachePath),
 	})
 	utils.CheckErr(err)
 }
@@ -385,6 +386,23 @@ func getOauthClient(args cli.Arguments) (*http.Client, error) {
 func getOauthClientWithConfigDir(args cli.Arguments, configDir string) (*http.Client, error) {
 	if args.String("refreshToken") != "" && args.String("accessToken") != "" {
 		utils.ExitF("Access token not needed when refresh token is provided")
+	}
+
+	if args.String("serviceAccount") == "" {
+		if meta, err := loadAccountMeta(configDir); err == nil && meta.Type == accountTypeService {
+			serviceAccountFile := meta.ServiceAccountFile
+			if serviceAccountFile == "" {
+				serviceAccountFile = ServiceAccountFilename
+			}
+			serviceAccountPath := utils.ConfigFilePath(configDir, serviceAccountFile)
+			serviceAccountClient, err := auth.NewServiceAccountClient(serviceAccountPath)
+			if err != nil {
+				return nil, err
+			}
+			return serviceAccountClient, nil
+		} else if err != nil && !os.IsNotExist(err) {
+			return nil, err
+		}
 	}
 
 	clientId := ClientId

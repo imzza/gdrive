@@ -3,13 +3,15 @@ package drive
 import (
 	"bytes"
 	"fmt"
-	"google.golang.org/api/drive/v3"
-	"google.golang.org/api/googleapi"
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"time"
+
+	"github.com/imzza/gdrive/internal/utils"
+	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/googleapi"
 )
 
 type DownloadSyncArgs struct {
@@ -189,7 +191,7 @@ func (self *Drive) downloadRemoteFile(id, fpath string, args DownloadSyncArgs, t
 	}
 
 	// Get timeout reader wrapper and context
-	timeoutReaderWrapper, ctx := getTimeoutReaderWrapperContext(args.Timeout)
+	timeoutReaderWrapper, ctx := utils.GetTimeoutReaderWrapperContext(args.Timeout)
 
 	res, err := self.service.Files.Get(id).Context(ctx).Download()
 	if err != nil {
@@ -208,7 +210,7 @@ func (self *Drive) downloadRemoteFile(id, fpath string, args DownloadSyncArgs, t
 	defer res.Body.Close()
 
 	// Wrap response body in progress reader
-	progressReader := getProgressReader(res.Body, args.Progress, res.ContentLength)
+	progressReader := utils.GetProgressReader(res.Body, args.Progress, res.ContentLength)
 
 	// Wrap reader in timeout reader
 	reader := timeoutReaderWrapper(progressReader)

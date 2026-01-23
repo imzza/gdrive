@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/imzza/gdrive/internal/utils"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/googleapi"
 )
@@ -21,6 +22,7 @@ type DownloadArgs struct {
 	Recursive bool
 	Delete    bool
 	Stdout    bool
+	NoParent  bool
 	Timeout   time.Duration
 }
 
@@ -125,7 +127,7 @@ func (self *Drive) downloadRecursive(args DownloadArgs) error {
 
 func (self *Drive) downloadBinary(f *drive.File, args DownloadArgs) (int64, int64, error) {
 	// Get timeout reader wrapper and context
-	timeoutReaderWrapper, ctx := getTimeoutReaderWrapperContext(args.Timeout)
+	timeoutReaderWrapper, ctx := utils.GetTimeoutReaderWrapperContext(args.Timeout)
 
 	res, err := self.service.Files.Get(f.Id).Context(ctx).Download()
 	if err != nil {
@@ -170,7 +172,7 @@ type saveFileArgs struct {
 
 func (self *Drive) saveFile(args saveFileArgs) (int64, int64, error) {
 	// Wrap response body in progress reader
-	srcReader := getProgressReader(args.body, args.progress, args.contentLength)
+	srcReader := utils.GetProgressReader(args.body, args.progress, args.contentLength)
 
 	if args.stdout {
 		// Write file content to stdout
@@ -233,12 +235,16 @@ func (self *Drive) downloadDirectory(parent *drive.File, args DownloadArgs) erro
 		return fmt.Errorf("Failed listing files: %s", err)
 	}
 
-	newPath := filepath.Join(args.Path, parent.Name)
+	newPath := args.Path
+	if !args.NoParent {
+		newPath = filepath.Join(args.Path, parent.Name)
+	}
 
 	for _, f := range files {
 		// Copy args and update changed fields
 		newArgs := args
 		newArgs.Path = newPath
+		newArgs.NoParent = false
 		newArgs.Id = f.Id
 		newArgs.Stdout = false
 

@@ -43,7 +43,6 @@ func ReadFile(path string) ([]byte, bool, error) {
 	return content, true, nil
 }
 
-
 func ReadToken(path string) (*oauth2.Token, bool, error) {
 
 	content, exists, err := ReadFile(path)

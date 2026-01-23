@@ -65,6 +65,11 @@ func main() {
 						Patterns:    []string{"--name"},
 						Description: "Account name (defaults to the account email)",
 					},
+					cli.StringFlag{
+						Name:        "serviceAccount",
+						Patterns:    []string{"--service-account"},
+						Description: "Service account JSON file path (absolute or relative to config dir)",
+					},
 				),
 			},
 		},
@@ -222,6 +227,22 @@ func main() {
 			},
 		},
 		{
+			Pattern:     "[global] files sync <subcommand> help",
+			Description: "Print command help",
+			Callback:    handlers.FilesSyncSubcommandHelpHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] files sync <subcommand> --help",
+			Description: "Print command help",
+			Callback:    handlers.FilesSyncSubcommandHelpHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
 			Pattern:     "[global] files <subcommand> help",
 			Description: "Print command help",
 			Callback:    handlers.FilesSubcommandHelpHandler,
@@ -233,6 +254,22 @@ func main() {
 			Pattern:     "[global] files <subcommand> --help",
 			Description: "Print command help",
 			Callback:    handlers.FilesSubcommandHelpHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] files revision <subcommand> help",
+			Description: "Print command help",
+			Callback:    handlers.FilesRevisionSubcommandHelpHandler,
+			FlagGroups: cli.FlagGroups{
+				cli.NewFlagGroup("global", globalFlags...),
+			},
+		},
+		{
+			Pattern:     "[global] files revision <subcommand> --help",
+			Description: "Print command help",
+			Callback:    handlers.FilesRevisionSubcommandHelpHandler,
 			FlagGroups: cli.FlagGroups{
 				cli.NewFlagGroup("global", globalFlags...),
 			},
@@ -260,6 +297,12 @@ func main() {
 						Name:        "recursive",
 						Patterns:    []string{"-r", "--recursive"},
 						Description: "Download directory recursively, documents will be skipped",
+						OmitValue:   true,
+					},
+					cli.BoolFlag{
+						Name:        "noParent",
+						Patterns:    []string{"--no-parent"},
+						Description: "Download directory contents into path without creating the top-level directory",
 						OmitValue:   true,
 					},
 					cli.StringFlag{
